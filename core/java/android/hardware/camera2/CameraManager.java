@@ -639,13 +639,7 @@ public final class CameraManager {
                 new HashMap<String, CameraCharacteristics>();
         Set<String> physicalCameraIds = chars.getPhysicalCameraIds();
         for (String physicalCameraId : physicalCameraIds) {
-            CameraCharacteristics physicalChars;
-            try {
-                physicalChars = getCameraCharacteristics(physicalCameraId);
-            } catch (Exception e) {
-                physicalCameraId = "20";
-                physicalChars = getCameraCharacteristics(physicalCameraId);
-            }
+            CameraCharacteristics physicalChars = getCameraCharacteristics(physicalCameraId);
             physicalIdsToChars.put(physicalCameraId, physicalChars);
         }
         return physicalIdsToChars;
