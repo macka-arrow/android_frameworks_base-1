@@ -24,14 +24,12 @@ import android.annotation.SdkConstant;
 import android.annotation.SdkConstant.SdkConstantType;
 import android.app.ActivityThread;
 import android.app.AppOpsManager;
-import android.app.compat.CompatChanges;
 import android.compat.annotation.UnsupportedAppUsage;
 import android.content.Context;
 import android.graphics.ImageFormat;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
-import android.hardware.camera2.CameraManager;
 import android.media.AudioAttributes;
 import android.media.IAudioService;
 import android.os.Build;
@@ -42,7 +40,6 @@ import android.os.Message;
 import android.os.Process;
 import android.os.RemoteException;
 import android.os.ServiceManager;
-import android.os.SystemProperties;
 import android.renderscript.Allocation;
 import android.renderscript.Element;
 import android.renderscript.RSIllegalArgumentException;
@@ -280,14 +277,6 @@ public class Camera {
      */
     public native static int getNumberOfCameras();
 
-    private static final boolean sLandscapeToPortrait =
-            SystemProperties.getBoolean(CameraManager.LANDSCAPE_TO_PORTRAIT_PROP, false);
-
-    private static boolean shouldOverrideToPortrait() {
-        return CompatChanges.isChangeEnabled(CameraManager.OVERRIDE_FRONT_CAMERA_APP_COMPAT)
-                && sLandscapeToPortrait;
-    }
-
     /**
      * Returns the information about a particular camera.
      * If {@link #getNumberOfCameras()} returns N, the valid id is 0 to N-1.
@@ -297,9 +286,7 @@ public class Camera {
      *    low-level failure).
      */
     public static void getCameraInfo(int cameraId, CameraInfo cameraInfo) {
-        boolean overrideToPortrait = shouldOverrideToPortrait();
-
-        _getCameraInfo(cameraId, overrideToPortrait, cameraInfo);
+        _getCameraInfo(cameraId, cameraInfo);
         IBinder b = ServiceManager.getService(Context.AUDIO_SERVICE);
         IAudioService audioService = IAudioService.Stub.asInterface(b);
         try {
@@ -312,8 +299,7 @@ public class Camera {
             Log.e(TAG, "Audio service is unavailable for queries");
         }
     }
-    private native static void _getCameraInfo(int cameraId, boolean overrideToPortrait,
-            CameraInfo cameraInfo);
+    private native static void _getCameraInfo(int cameraId, CameraInfo cameraInfo);
 
     /**
      * Information about a camera
@@ -494,22 +480,8 @@ public class Camera {
             mEventHandler = null;
         }
 
-        boolean overrideToPortrait = shouldOverrideToPortrait();
         return native_setup(new WeakReference<Camera>(this), cameraId,
-                ActivityThread.currentOpPackageName(), overrideToPortrait, forceSlowJpegMode);
-    }
-
-    private boolean shouldForceSlowJpegMode() {
-        Context applicationContext = ActivityThread.currentApplication().getApplicationContext();
-        String[] slowJpegPackageNames = applicationContext.getResources().getStringArray(
-                R.array.config_forceSlowJpegModeList);
-        String callingPackageName = applicationContext.getPackageName();
-        for (String packageName : slowJpegPackageNames) {
-            if (TextUtils.equals(packageName, callingPackageName)) {
-                return true;
-            }
-        }
-        return false;
+                ActivityThread.currentOpPackageName());
     }
 
     /** used by Camera#open, Camera#open(int) */
@@ -579,8 +551,7 @@ public class Camera {
     }
 
     @UnsupportedAppUsage
-    private native int native_setup(Object cameraThis, int cameraId, String packageName,
-            boolean overrideToPortrait, boolean forceSlowJpegMode);
+    private native int native_setup(Object cameraThis, int cameraId, String packageName);
 
     private native final void native_release();
 
